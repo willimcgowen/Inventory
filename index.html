@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>George E Booth Co. - IL American Water Inventory</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Work+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #C53030; --primary-dark: #9B2C2C; --secondary: #2D3748;
+            --success: #38A169; --bg: #F7FAFC; --surface: #FFFFFF;
+            --text: #1A202C; --text-light: #4A5568; --border: #E2E8F0;
+            --shadow: rgba(197, 48, 48, 0.12);
+        }
+        body { font-family: 'Work Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white; padding: 2rem; box-shadow: 0 4px 24px var(--shadow);
+        }
+        .header-content { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; gap: 2rem; }
+        .header h1 { font-size: 2.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .header .subtitle { font-size: 1rem; opacity: 0.95; margin-bottom: 0.5rem; }
+        .header .address { font-size: 0.9rem; opacity: 0.9; }
+        .header .address a { color: white; text-decoration: underline; }
+        .header .address a:hover { opacity: 0.8; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem; }
+        .stat-card { background: var(--surface); padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px var(--shadow); border-left: 4px solid var(--primary); }
+        .stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; text-transform: uppercase; color: var(--text-light); }
+        .stat-value { font-size: 2rem; font-weight: 700; color: var(--primary); }
+        .controls { background: var(--surface); padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px var(--shadow); border-top: 4px solid var(--primary); margin-bottom: 2rem; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full-width { grid-column: 1 / -1; }
+        label { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; text-transform: uppercase; }
+        label .required { color: var(--primary); }
+        input, select, textarea {
+            padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px;
+            font-family: 'Work Sans', sans-serif; font-size: 1rem; background: var(--bg);
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(197, 48, 48, 0.1);
+        }
+        textarea { resize: vertical; min-height: 80px; }
+        .btn {
+            padding: 0.875rem 1.75rem; border: none; border-radius: 8px;
+            font-family: 'IBM Plex Mono', monospace; font-size: 0.9rem; font-weight: 600;
+            text-transform: uppercase; cursor: pointer; box-shadow: 0 2px 8px var(--shadow);
+            transition: all 0.3s ease;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-danger { background: #F56565; color: white; padding: 0.5rem 1rem; font-size: 0.8rem; }
+        .btn-danger:disabled { background: #CBD5E0; cursor: not-allowed; opacity: 0.6; }
+        .search-bar { margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center; }
+        .search-bar input { flex: 1; padding: 1rem; }
+        .inventory-table { background: var(--surface); border-radius: 12px; box-shadow: 0 2px 8px var(--shadow); overflow-x: auto; border-top: 4px solid var(--primary); }
+        table { width: 100%; border-collapse: collapse; min-width: 1400px; }
+        thead { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; }
+        th { padding: 1rem 0.75rem; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; text-transform: uppercase; }
+        td { padding: 1rem 0.75rem; border-bottom: 1px solid var(--border); }
+        tbody tr:hover { background: var(--bg); }
+        .status-badge {
+            display: inline-block; padding: 0.35rem 0.75rem; border-radius: 20px;
+            font-size: 0.7rem; font-weight: 600; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase;
+        }
+        .status-available { background: #C6F6D5; color: #22543D; }
+        .status-checked-out { background: #FED7D7; color: #742A2A; }
+        .status-reserved { background: #E9D8FD; color: #44337A; }
+        input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--surface); padding: 2rem; border-radius: 12px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; border-top: 4px solid var(--primary); }
+        .modal-buttons { display: flex; gap: 1rem; margin-top: 1.5rem; }
+        .checkout-section { background: #FFF5F5; padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--primary); margin-top: 1rem; }
+        .checkout-section h3 { color: var(--primary); margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1>George E Booth Co.</h1>
+                <p class="subtitle">Equipment Inventory System - IL American Water</p>
+                <p class="subtitle">Products and Services for Process Measurement and Control</p>
+                <p class="address">
+                    📍 <a href="https://www.google.com/maps/dir/?api=1&destination=43+E+Belmont+Dr,+Romeoville,+IL+60446" target="_blank">43 E Belmont Dr, Romeoville, IL 60446</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Items</div>
+                <div class="stat-value" id="totalItems">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Available</div>
+                <div class="stat-value" id="availableItems" style="color: var(--success)">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Checked Out</div>
+                <div class="stat-value" id="checkedOutItems" style="color: var(--primary)">0</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <h2 style="color: var(--primary); margin-bottom: 1.5rem;">Add New Equipment</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Equipment Name <span class="required">*</span></label>
+                    <input type="text" id="equipmentName" placeholder="e.g., Pressure Transmitter">
+                </div>
+                <div class="form-group">
+                    <label>Parent Equipment</label>
+                    <input type="text" id="parentEquipment" placeholder="e.g., Spare part for an instrument?">
+                </div>
+                <div class="form-group">
+                    <label>Technology <span class="required">*</span></label>
+                    <select id="technology">
+                        <option value="">Select Technology</option>
+                        <option>Flow</option>
+                        <option>Level</option>
+                        <option>Pressure</option>
+                        <option>Temperature</option>
+                        <option>Recorder</option>
+                        <option>pH</option>
+                        <option>Conductivity</option>
+                        <option>Chlorine</option>
+                        <option>Oxygen</option>
+                        <option>Orthophosphate</option>
+                        <option>Total Phosphorus</option>
+                        <option>Gas Detection</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Quantity <span class="required">*</span></label>
+                    <input type="number" id="quantity" min="1" value="1">
+                </div>
+                <div class="form-group">
+                    <label>Status <span class="required">*</span></label>
+                    <select id="status">
+                        <option>Available</option>
+                        <option>Checked Out</option>
+                        <option>Reserved</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Storage Location <span class="required">*</span></label>
+                    <input type="text" id="storageLocation" placeholder="e.g., Warehouse A, Shelf 3">
+                </div>
+            </div>
+            <div class="form-group full-width" style="margin-bottom: 1.5rem;">
+                <label>Notes / Description</label>
+                <textarea id="notes" placeholder="Additional information..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addEquipment()">Add Equipment</button>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 0.5rem;">Filter by Technology</label>
+                <select id="filterTechnology" onchange="filterInventory()" style="width: 100%;">
+                    <option value="">All Technologies</option>
+                    <option>Flow</option>
+                    <option>Level</option>
+                    <option>Pressure</option>
+                    <option>Temperature</option>
+                    <option>Recorder</option>
+                    <option>pH</option>
+                    <option>Conductivity</option>
+                    <option>Chlorine</option>
+                    <option>Oxygen</option>
+                    <option>Orthophosphate</option>
+                    <option>Total Phosphorus</option>
+                    <option>Gas Detection</option>
+                </select>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 0.5rem;">Filter by Status</label>
+                <select id="filterStatus" onchange="filterInventory()" style="width: 100%;">
+                    <option value="">All Statuses</option>
+                    <option>Available</option>
+                    <option>Checked Out</option>
+                    <option>Reserved</option>
+                </select>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 0.5rem;">Filter by Storage Location</label>
+                <select id="filterLocation" onchange="filterInventory()" style="width: 100%;">
+                    <option value="">All Locations</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search equipment..." onkeyup="filterInventory()">
+            <button class="btn btn-danger" id="deleteSelectedBtn" onclick="bulkDelete()" disabled>Delete Selected (<span id="selectedCount">0</span>)</button>
+        </div>
+
+        <div class="inventory-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Select</th>
+                        <th>Equipment Name</th>
+                        <th>Parent Equipment</th>
+                        <th>Technology</th>
+                        <th>Qty</th>
+                        <th>Status</th>
+                        <th>Storage Location</th>
+                        <th>Checked Out By</th>
+                        <th>Checkout Date</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryBody">
+                    <tr><td colspan="11" style="text-align:center; padding:2rem;">Loading inventory...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h2 style="color: var(--primary); margin-bottom: 1.5rem;">Edit Equipment</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Equipment Name <span class="required">*</span></label>
+                    <input type="text" id="editName">
+                </div>
+                <div class="form-group">
+                    <label>Parent Equipment</label>
+                    <input type="text" id="editParent">
+                </div>
+                <div class="form-group">
+                    <label>Technology <span class="required">*</span></label>
+                    <select id="editTechnology">
+                        <option>Flow</option>
+                        <option>Level</option>
+                        <option>Pressure</option>
+                        <option>Temperature</option>
+                        <option>Recorder</option>
+                        <option>pH</option>
+                        <option>Conductivity</option>
+                        <option>Chlorine</option>
+                        <option>Oxygen</option>
+                        <option>Orthophosphate</option>
+                        <option>Total Phosphorus</option>
+                        <option>Gas Detection</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Quantity <span class="required">*</span></label>
+                    <input type="number" id="editQuantity" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Status <span class="required">*</span></label>
+                    <select id="editStatus">
+                        <option>Available</option>
+                        <option>Checked Out</option>
+                        <option>Reserved</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Storage Location <span class="required">*</span></label>
+                    <input type="text" id="editLocation">
+                </div>
+            </div>
+            <div class="form-group full-width" style="margin: 1rem 0;">
+                <label>Notes</label>
+                <textarea id="editNotes"></textarea>
+            </div>
+            <div class="checkout-section">
+                <h3>Checkout Information</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Checked Out By</label>
+                        <input type="text" id="editCheckedOutBy">
+                    </div>
+                    <div class="form-group">
+                        <label>Checkout Date</label>
+                        <input type="date" id="editCheckoutDate">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+                <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let inventory = [];
+        let currentEditIndex = null;
+        const STORAGE_KEY = 'geb_inventory';
+
+        // Use localStorage instead of window.storage
+        const storage = {
+            async set(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                    return { success: true };
+                } catch (e) {
+                    console.error('Storage error:', e);
+                    return null;
+                }
+            },
+            async get(key) {
+                try {
+                    const value = localStorage.getItem(key);
+                    return value ? { value } : null;
+                } catch (e) {
+                    console.error('Storage error:', e);
+                    return null;
+                }
+            },
+            async delete(key) {
+                try {
+                    localStorage.removeItem(key);
+                    return { success: true };
+                } catch (e) {
+                    console.error('Storage error:', e);
+                    return null;
+                }
+            }
+        };
+
+        window.addEventListener('load', loadInventory);
+
+        async function loadInventory() {
+            try {
+                const data = await storage.get(STORAGE_KEY);
+                if (data && data.value) {
+                    inventory = JSON.parse(data.value);
+                }
+            } catch (error) {
+                console.error('Load error:', error);
+            }
+            renderInventory();
+            updateStats();
+        }
+
+        async function saveInventory() {
+            try {
+                await storage.set(STORAGE_KEY, JSON.stringify(inventory));
+            } catch (error) {
+                console.error('Save error:', error);
+            }
+        }
+
+        function generateId() {
+            return 'eq_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        async function addEquipment() {
+            const name = document.getElementById('equipmentName').value.trim();
+            const parent = document.getElementById('parentEquipment').value.trim();
+            const technology = document.getElementById('technology').value;
+            const quantity = parseInt(document.getElementById('quantity').value) || 1;
+            const status = document.getElementById('status').value;
+            const location = document.getElementById('storageLocation').value.trim();
+            const notes = document.getElementById('notes').value.trim();
+
+            if (!name || !technology || !location) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            const equipment = {
+                id: generateId(),
+                name, parent, technology, quantity, status, location, notes,
+                checkedOutBy: '', checkoutDate: '', timestamp: Date.now()
+            };
+
+            inventory.push(equipment);
+            await saveInventory();
+            
+            document.getElementById('equipmentName').value = '';
+            document.getElementById('parentEquipment').value = '';
+            document.getElementById('technology').value = '';
+            document.getElementById('quantity').value = '1';
+            document.getElementById('status').value = 'Available';
+            document.getElementById('storageLocation').value = '';
+            document.getElementById('notes').value = '';
+            
+            renderInventory();
+            updateStats();
+        }
+
+        function renderInventory() {
+            const tbody = document.getElementById('inventoryBody');
+            
+            if (inventory.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:4rem;">No equipment yet. Add your first item above!</td></tr>';
+                updateDeleteButton();
+                return;
+            }
+
+            tbody.innerHTML = inventory.map((item, index) => `
+                <tr>
+                    <td><input type="checkbox" class="item-checkbox" data-index="${index}" onchange="updateDeleteButton()"></td>
+                    <td><strong>${item.name}</strong></td>
+                    <td>${item.parent || '—'}</td>
+                    <td>${item.technology}</td>
+                    <td><strong>${item.quantity}</strong></td>
+                    <td><span class="status-badge status-${item.status.toLowerCase().replace(' ', '-')}">${item.status}</span></td>
+                    <td>${item.location}</td>
+                    <td>${item.checkedOutBy || '—'}</td>
+                    <td>${item.checkoutDate ? new Date(item.checkoutDate).toLocaleDateString() : '—'}</td>
+                    <td style="max-width: 200px;">${item.notes || '—'}</td>
+                    <td>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button class="btn btn-secondary" onclick="editEquipment(${index})">Edit</button>
+                            <button class="btn btn-danger" onclick="deleteEquipment(${index})">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            
+            updateLocationFilter();
+            updateDeleteButton();
+        }
+
+        function updateDeleteButton() {
+            const checkboxes = document.querySelectorAll('.item-checkbox:checked');
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            const countSpan = document.getElementById('selectedCount');
+            
+            countSpan.textContent = checkboxes.length;
+            deleteBtn.disabled = checkboxes.length === 0;
+        }
+
+        function updateLocationFilter() {
+            const locations = [...new Set(inventory.map(item => item.location))].sort();
+            const filterLocation = document.getElementById('filterLocation');
+            const currentValue = filterLocation.value;
+            
+            filterLocation.innerHTML = '<option value="">All Locations</option>' + 
+                locations.map(loc => `<option value="${loc}">${loc}</option>`).join('');
+            
+            if (locations.includes(currentValue)) {
+                filterLocation.value = currentValue;
+            }
+        }
+
+        function filterInventory() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filterTech = document.getElementById('filterTechnology').value;
+            const filterStat = document.getElementById('filterStatus').value;
+            const filterLoc = document.getElementById('filterLocation').value;
+            
+            const rows = document.querySelectorAll('#inventoryBody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length < 2) return; // Skip empty state row
+                
+                const text = row.textContent.toLowerCase();
+                const technology = cells[3].textContent.trim();
+                const status = cells[5].textContent.trim();
+                const location = cells[6].textContent.trim();
+                
+                const matchesSearch = text.includes(searchTerm);
+                const matchesTech = !filterTech || technology === filterTech;
+                const matchesStatus = !filterStat || status === filterStat;
+                const matchesLocation = !filterLoc || location === filterLoc;
+                
+                row.style.display = (matchesSearch && matchesTech && matchesStatus && matchesLocation) ? '' : 'none';
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('totalItems').textContent = inventory.length;
+            document.getElementById('availableItems').textContent = inventory.filter(i => i.status === 'Available').length;
+            document.getElementById('checkedOutItems').textContent = inventory.filter(i => i.status === 'Checked Out').length;
+        }
+
+        async function bulkDelete() {
+            const checkboxes = document.querySelectorAll('.item-checkbox:checked');
+            if (checkboxes.length === 0) return;
+            
+            if (!confirm(`Delete ${checkboxes.length} selected item(s)?`)) return;
+
+            const indicesToDelete = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index)).sort((a, b) => b - a);
+            
+            for (const index of indicesToDelete) {
+                inventory.splice(index, 1);
+            }
+
+            await saveInventory();
+            renderInventory();
+            updateStats();
+        }
+
+        function editEquipment(index) {
+            currentEditIndex = index;
+            const item = inventory[index];
+            
+            document.getElementById('editName').value = item.name;
+            document.getElementById('editParent').value = item.parent || '';
+            document.getElementById('editTechnology').value = item.technology;
+            document.getElementById('editQuantity').value = item.quantity;
+            document.getElementById('editStatus').value = item.status;
+            document.getElementById('editLocation').value = item.location;
+            document.getElementById('editNotes').value = item.notes || '';
+            document.getElementById('editCheckedOutBy').value = item.checkedOutBy || '';
+            document.getElementById('editCheckoutDate').value = item.checkoutDate || '';
+            
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        async function saveEdit() {
+            if (currentEditIndex === null) return;
+            
+            const oldItem = inventory[currentEditIndex];
+            const newItem = {
+                id: oldItem.id,
+                name: document.getElementById('editName').value.trim(),
+                parent: document.getElementById('editParent').value.trim(),
+                technology: document.getElementById('editTechnology').value,
+                quantity: parseInt(document.getElementById('editQuantity').value) || 1,
+                status: document.getElementById('editStatus').value,
+                location: document.getElementById('editLocation').value.trim(),
+                notes: document.getElementById('editNotes').value.trim(),
+                checkedOutBy: document.getElementById('editCheckedOutBy').value.trim(),
+                checkoutDate: document.getElementById('editCheckoutDate').value,
+                timestamp: oldItem.timestamp
+            };
+
+            if (!newItem.name || !newItem.technology || !newItem.location) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            inventory[currentEditIndex] = newItem;
+            await saveInventory();
+            
+            closeEditModal();
+            renderInventory();
+            updateStats();
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            currentEditIndex = null;
+        }
+
+        async function deleteEquipment(index) {
+            if (!confirm('Delete this equipment?')) return;
+
+            inventory.splice(index, 1);
+            await saveInventory();
+            renderInventory();
+            updateStats();
+        }
+
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) closeEditModal();
+        });
+    </script>
+</body>
+</html>
